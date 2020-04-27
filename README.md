@@ -2,7 +2,7 @@
 
 This is the official code for "Imitating and Attacking Production Machine Translation Systems". This repository contains the code for replicating our adversarial attack experiments on your own MT models.
 
-Read our [blog](http://www.ericswallace.com/stealing) for more information on the method.
+Read our [blog](http://www.ericswallace.com/imitating) for more information on the method.
 
 ## Dependencies
 
