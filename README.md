@@ -1,142 +1,85 @@
-# <img src="fairseq_logo.png" width="30"> Introduction
+# Imitating and Attacking Production Machine Translation Systems
 
-Fairseq(-py) is a sequence modeling toolkit that allows researchers and
-developers to train custom models for translation, summarization, language
-modeling and other text generation tasks.
+This is the official code for "Imitating and Attacking Production Machine Translation Systems". This repository contains the code for replicating our adversarial attack experiments on your own MT models.
 
-### What's New:
+Read our [blog](http://www.ericswallace.com/stealing) for more information on the method.
 
-- November 2019: [CamemBERT model and code released](examples/camembert/README.md)
-- November 2019: [BART model and code released](examples/bart/README.md)
-- November 2019: [XLM-R models and code released](examples/xlmr/README.md)
-- September 2019: [Nonautoregressive translation code released](examples/nonautoregressive_translation/README.md)
-- August 2019: [WMT'19 models released](examples/wmt19/README.md)
-- July 2019: fairseq relicensed under MIT license
-- July 2019: [RoBERTa models and code released](examples/roberta/README.md)
-- June 2019: [wav2vec models and code released](examples/wav2vec/README.md)
+## Dependencies
 
-### Features:
+This code is written using [Fairseq](https://github.com/facebookresearch/fairseq) and PyTorch. The code is based on an older version of Fairseq, from [this commit](https://github.com/pytorch/fairseq/tree/99fbd317f6b3256a39868d6568e70672f0f512b9). The code is made to run on one GPU or CPU. I used one GTX 1080 for all the experiments. Most experiments run in a few minutes.
 
-Fairseq provides reference implementations of various sequence-to-sequence models, including:
-- **Convolutional Neural Networks (CNN)**
-  - [Language Modeling with Gated Convolutional Networks (Dauphin et al., 2017)](examples/language_model/conv_lm/README.md)
-  - [Convolutional Sequence to Sequence Learning (Gehring et al., 2017)](examples/conv_seq2seq/README.md)
-  - [Classical Structured Prediction Losses for Sequence to Sequence Learning (Edunov et al., 2018)](https://github.com/pytorch/fairseq/tree/classic_seqlevel)
-  - [Hierarchical Neural Story Generation (Fan et al., 2018)](examples/stories/README.md)
-  - [wav2vec: Unsupervised Pre-training for Speech Recognition (Schneider et al., 2019)](examples/wav2vec/README.md)
-- **LightConv and DynamicConv models**
-  - [Pay Less Attention with Lightweight and Dynamic Convolutions (Wu et al., 2019)](examples/pay_less_attention_paper/README.md)
-- **Long Short-Term Memory (LSTM) networks**
-  - Effective Approaches to Attention-based Neural Machine Translation (Luong et al., 2015)
-- **Transformer (self-attention) networks**
-  - Attention Is All You Need (Vaswani et al., 2017)
-  - [Scaling Neural Machine Translation (Ott et al., 2018)](examples/scaling_nmt/README.md)
-  - [Understanding Back-Translation at Scale (Edunov et al., 2018)](examples/backtranslation/README.md)
-  - [Adaptive Input Representations for Neural Language Modeling (Baevski and Auli, 2018)](examples/language_model/transformer_lm/README.md)
-  - [Mixture Models for Diverse Machine Translation: Tricks of the Trade (Shen et al., 2019)](examples/translation_moe/README.md)
-  - [RoBERTa: A Robustly Optimized BERT Pretraining Approach (Liu et al., 2019)](examples/roberta/README.md)
-  - [Facebook FAIR's WMT19 News Translation Task Submission (Ng et al., 2019)](examples/wmt19/README.md)
-  - [Jointly Learning to Align and Translate with Transformer Models (Garg et al., 2019)](examples/joint_alignment_translation/README.md )
-- **Non-autoregressive Transformers**
-  - Non-Autoregressive Neural Machine Translation (Gu et al., 2017)
-  - Deterministic Non-Autoregressive Neural Sequence Modeling by Iterative Refinement (Lee et al. 2018)
-  - Insertion Transformer: Flexible Sequence Generation via Insertion Operations (Stern et al. 2019)
-  - Mask-Predict: Parallel Decoding of Conditional Masked Language Models (Ghazvininejad et al., 2019)
-  - [Levenshtein Transformer (Gu et al., 2019)](examples/nonautoregressive_translation/README.md)
+## Installation
+
+An easy way to install the code is to create a fresh anaconda environment:
+
+```
+conda create -n attacking python=3.6
+source activate attacking
+pip install -e . # install local version of fairseq
+pip install -r requirements.txt
+```
+Now you should be ready to go!
 
 
-**Additionally:**
-- multi-GPU (distributed) training on one machine or across multiple machines
-- fast generation on both CPU and GPU with multiple search algorithms implemented:
-  - beam search
-  - Diverse Beam Search ([Vijayakumar et al., 2016](https://arxiv.org/abs/1610.02424))
-  - sampling (unconstrained, top-k and top-p/nucleus)
-- large mini-batch training even on a single GPU via delayed updates
-- mixed precision training (trains faster with less GPU memory on [NVIDIA tensor cores](https://developer.nvidia.com/tensor-cores))
-- extensible: easily register new models, criterions, tasks, optimizers and learning rate schedulers
+## Code Structure 
 
-We also provide [pre-trained models](#pre-trained-models-and-examples) for several benchmark
-translation and language modeling datasets.
+The repository is broken down by attack type:
++ `malicious_nonsense.py` contains the malicious nonsense attack.
++ `targeted_flips.py` contains the targeted flips attack.
++ `universal.py` contains the two universal attacks (untargeted and suffix dropper).
 
-![Model](fairseq.gif)
+The file `attack_utils.py` contains additional code for evaluating models, the first-order taylor expansion, computing embedding gradients, and evaluating the top candidates for the attack. Overall, the code in this repository is a stripped down and cleaned up version of the code used in the paper. The code is designed to be easy to understand and quick to get started with.
 
-# Requirements and Installation
 
-* [PyTorch](http://pytorch.org/) version >= 1.2.0
-* Python version >= 3.5
-* For training new models, you'll also need an NVIDIA GPU and [NCCL](https://github.com/NVIDIA/nccl)
-* **For faster training** install NVIDIA's [apex](https://github.com/NVIDIA/apex) library with the `--cuda_ext` option
+## Getting Started
 
-To install fairseq:
+First, you need to get a machine translation model. Fortunately, `fairseq` already has a number of pretrained models available. See [this repository](https://github.com/pytorch/fairseq/tree/master/examples/translation) for a complete list. Here we will download a transformer-based English-German model that is trained on the WMT16 dataset.
+
 ```bash
-pip install fairseq
+wget https://dl.fbaipublicfiles.com/fairseq/models/wmt16.en-de.joined-dict.transformer.tar.bz2
+wget https://dl.fbaipublicfiles.com/fairseq/data/wmt16.en-de.joined-dict.newstest2014.tar.bz2
+
+bunzip2 wmt16.en-de.joined-dict.transformer.tar.bz2
+bunzip2 wmt16.en-de.joined-dict.newstest2014.tar.bz2
+tar -xvf wmt16.en-de.joined-dict.transformer.tar
+tar -xvf wmt16.en-de.joined-dict.newstest2014.tar
 ```
 
-On MacOS:
+### Malicious Nonsense
+
+Now we can run an interactive version of the malicious nonsense attack. 
 ```bash
-CFLAGS="-stdlib=libc++" pip install fairseq
+export CUDA_VISIBLE_DEVICES=0
+python malicious_nonsense.py wmt16.en-de.joined-dict.newstest2014/ --arch transformer_vaswani_wmt_en_de_big --restore-file wmt16.en-de.joined-dict.transformer/model.pt  --bpe subword_nmt --bpe-codes wmt16.en-de.joined-dict.transformer/bpecodes --interactive-attacks --source-lang en --target-lang de
 ```
+The arguments we passed in are: the dataset we downloaded, the model architecture type (we downloaded a Transformer Big architecture), the model checkpoint path, the path to the BPE dictionary, and a flag to enable interactive attacks, respectively. The `--source-lang` and `--target-lang` flags are usually ok to omit because `fairseq` can automatically infer the language pair. If you want to run the attack on the WMT16 test set rather than interactively, you can omit the `--interactive-attacks` flag and pass in `--valid-subset test`. If you do not have a GPU, omit the `export CUDA_VISIBLE_DEVICES=0` command and also pass in the `--cpu` argument in the command.
 
-If you use Docker make sure to increase the shared memory size either with
-`--ipc=host` or `--shm-size` as command line options to `nvidia-docker run`.
+Now you can enter a sentence that you want to turn into malicious nonsense. Let's try something benign like `I am a student at the University down the hill`. You can also try something more malicious like `Barack Obama was shot by a rebel group` or whatever your desired adversarial malicious input/output from the model is.
 
-**Installing from source**
+### Targeted Flips
 
-To install fairseq from source and develop locally:
+The other attacks follow the same arguments as malicious nonsense.
+
 ```bash
-git clone https://github.com/pytorch/fairseq
-cd fairseq
-pip install --editable .
+python targeted_flips.py wmt16.en-de.joined-dict.newstest2014/ --arch transformer_vaswani_wmt_en_de_big --restore-file wmt16.en-de.joined-dict.transformer/model.pt  --bpe subword_nmt --bpe-codes wmt16.en-de.joined-dict.transformer/bpecodes --interactive-attacks --source-lang en --target-lang de
 ```
 
-# Getting Started
+For targeted flips we currently assume that `--interactive-attacks` is set. 
 
-The [full documentation](https://fairseq.readthedocs.io/) contains instructions
-for getting started, training new models and extending fairseq with new model
-types and tasks.
+First, enter the sentence that you want to attack, e.g., `I am sad` which translates to `Ich bin traurig` for the English-German model we downloaded above. Then, choose the word in the target side that you want to flip, e.g., `traurig` and what you want to flip it to, e.g., `froh` (which means happy/glad in English). Then, you can enter nothing for the optional lists. This should cause the attack to flip the input from `I am sad` to `I am glad`.
 
-# Pre-trained models and examples
+Of course, `I am glad` is not "adversarial" in the sense that the model is making a correct translation. We can restrict the attack from adding the word `glad` into the attack. The attack finds `I am lee` which the model translates as `Ich bin froh`.
 
-We provide pre-trained models and pre-processed, binarized test sets for several tasks listed below,
-as well as example training and evaluation commands.
+### Universal Attacks
 
-- [Translation](examples/translation/README.md): convolutional and transformer models are available
-- [Language Modeling](examples/language_model/README.md): convolutional and transformer models are available
-- [wav2vec](examples/wav2vec/README.md): wav2vec large model is available
-
-We also have more detailed READMEs to reproduce results from specific papers:
-- [Jointly Learning to Align and Translate with Transformer Models (Garg et al., 2019)](examples/joint_alignment_translation/README.md )
-- [Levenshtein Transformer (Gu et al., 2019)](examples/nonautoregressive_translation/README.md)
-- [Facebook FAIR's WMT19 News Translation Task Submission (Ng et al., 2019)](examples/wmt19/README.md)
-- [RoBERTa: A Robustly Optimized BERT Pretraining Approach (Liu et al., 2019)](examples/roberta/README.md)
-- [wav2vec: Unsupervised Pre-training for Speech Recognition (Schneider et al., 2019)](examples/wav2vec/README.md)
-- [Mixture Models for Diverse Machine Translation: Tricks of the Trade (Shen et al., 2019)](examples/translation_moe/README.md)
-- [Pay Less Attention with Lightweight and Dynamic Convolutions (Wu et al., 2019)](examples/pay_less_attention_paper/README.md)
-- [Understanding Back-Translation at Scale (Edunov et al., 2018)](examples/backtranslation/README.md)
-- [Classical Structured Prediction Losses for Sequence to Sequence Learning (Edunov et al., 2018)](https://github.com/pytorch/fairseq/tree/classic_seqlevel)
-- [Hierarchical Neural Story Generation (Fan et al., 2018)](examples/stories/README.md)
-- [Scaling Neural Machine Translation (Ott et al., 2018)](examples/scaling_nmt/README.md)
-- [Convolutional Sequence to Sequence Learning (Gehring et al., 2017)](examples/conv_seq2seq/README.md)
-- [Language Modeling with Gated Convolutional Networks (Dauphin et al., 2017)](examples/language_model/conv_lm/README.md)
-
-# Join the fairseq community
-
-* Facebook page: https://www.facebook.com/groups/fairseq.users
-* Google group: https://groups.google.com/forum/#!forum/fairseq-users
-
-# License
-fairseq(-py) is MIT-licensed.
-The license applies to the pre-trained models as well.
-
-# Citation
-
-Please cite as:
-
-```bibtex
-@inproceedings{ott2019fairseq,
-  title = {fairseq: A Fast, Extensible Toolkit for Sequence Modeling},
-  author = {Myle Ott and Sergey Edunov and Alexei Baevski and Angela Fan and Sam Gross and Nathan Ng and David Grangier and Michael Auli},
-  booktitle = {Proceedings of NAACL-HLT 2019: Demonstrations},
-  year = {2019},
-}
+```bash
+python universal.py wmt16.en-de.joined-dict.newstest2014/ --arch transformer_vaswani_wmt_en_de_big --restore-file wmt16.en-de.joined-dict.transformer/model.pt  --bpe subword_nmt --bpe-codes wmt16.en-de.joined-dict.transformer/bpecodes --interactive-attacks --source-lang en --target-lang de
 ```
+
+This commands defaults to the untargeted attack. Passing `--suffix-dropper` will perform the suffix dropper attack.
+
+## Contributions and Contact
+
+This code was developed by Eric Wallace, contact available at ericwallace@berkeley.edu.
+
+If you'd like to contribute code, feel free to open a [pull request](https://github.com/Eric-Wallace/adversarial-mt/pulls). If you find an issue with the code, please open an [issue](https://github.com/Eric-Wallace/adversarial-mt/issues).

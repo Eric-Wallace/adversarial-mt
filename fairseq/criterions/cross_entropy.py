@@ -4,7 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+import torch
 import torch.nn.functional as F
+from copy import deepcopy
 
 from fairseq import utils
 
@@ -17,7 +19,7 @@ class CrossEntropyCriterion(FairseqCriterion):
     def __init__(self, args, task):
         super().__init__(args, task)
 
-    def forward(self, model, sample, reduce=True):
+    def forward(self, model, sample, reduce=True, target_mask=None):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -26,7 +28,7 @@ class CrossEntropyCriterion(FairseqCriterion):
         3) logging outputs to display while training
         """
         net_output = model(**sample['net_input'])
-        loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
+        loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce, target_mask=target_mask)
         sample_size = sample['target'].size(0) if self.args.sentence_avg else sample['ntokens']
         logging_output = {
             'loss': utils.item(loss.data) if reduce else loss.data,
@@ -37,13 +39,20 @@ class CrossEntropyCriterion(FairseqCriterion):
         }
         return loss, sample_size, logging_output
 
-    def compute_loss(self, model, net_output, sample, reduce=True):
+    def compute_loss(self, model, net_output, sample, reduce=True, target_mask=None):
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
         lprobs = lprobs.view(-1, lprobs.size(-1))
         target = model.get_targets(sample, net_output).view(-1)
+        # used for targeted flips attack, we mask out all positions except the target token
+        copied_target = deepcopy(target) # copy so we don't affect the target (its mutable)
+        if target_mask is not None:
+            for pos, value in enumerate(copied_target):
+                # target is a flat tensor that is the same value repeated batch size times
+                if not target_mask[pos % len(target_mask)]:
+                    copied_target[pos] = torch.LongTensor([self.padding_idx]).squeeze(0).to(lprobs.device)
         loss = F.nll_loss(
             lprobs,
-            target,
+            copied_target,
             ignore_index=self.padding_idx,
             reduction='sum' if reduce else 'none',
         )

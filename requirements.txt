@@ -1,0 +1,5 @@
+torch
+sacremoses
+subword-nmt
+sacrebleu
+nltk

@@ -25,6 +25,7 @@ def get_training_parser(default_task='translation'):
     add_model_args(parser)
     add_optimization_args(parser)
     add_checkpoint_args(parser)
+    add_adversarial_args(parser)
     return parser
 
 
@@ -408,6 +409,17 @@ def add_checkpoint_args(parser):
                        help='metric to use for saving "best" checkpoints')
     group.add_argument('--maximize-best-checkpoint-metric', action='store_true',
                        help='select the largest metric value for saving "best" checkpoints')
+    # fmt: on
+    return group
+
+
+def add_adversarial_args(parser):
+    group = parser.add_argument_group('Adversrial')
+    # fmt: off
+    group.add_argument('--interactive-attacks', action='store_true',
+                       help='Run the adversarial attacks in interactive mode')
+    group.add_argument('--suffix-dropper', action='store_true',
+                       help='When using universal attacks, use the suffix dropper instead of the untargeted attack')
     # fmt: on
     return group
 
