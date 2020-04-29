@@ -1,6 +1,6 @@
-# Imitating and Attacking Production Machine Translation Systems
+# Imitation Attacks and Defenses for Black-box Machine Translation Systems
 
-This is the official code for "Imitating and Attacking Production Machine Translation Systems". This repository contains the code for replicating our adversarial attack experiments on your own MT models.
+This is the official code for "Imitation Attacks and Defenses for Black-box Machine Translation Systems". This repository contains the code for replicating our adversarial attack experiments on your own MT models.
 
 Read our [blog](http://www.ericswallace.com/imitation) for more information on the method.
 
