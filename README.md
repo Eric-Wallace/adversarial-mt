@@ -2,7 +2,7 @@
 
 This is the official code for "Imitation Attacks and Defenses for Black-box Machine Translation Systems". This repository contains the code for replicating our adversarial attack experiments on your own MT models.
 
-Read our [blog](http://www.ericswallace.com/imitation) for more information on the method.
+Read our [blog](http://www.ericswallace.com/imitation) and our [paper](https://arxiv.org/abs/2004.15015) for more information on the method.
 
 ## Dependencies
 
@@ -77,6 +77,18 @@ python universal.py wmt16.en-de.joined-dict.newstest2014/ --arch transformer_vas
 ```
 
 This commands defaults to the untargeted attack. Passing `--suffix-dropper` will perform the suffix dropper attack.
+
+## References
+
+Please consider citing our work if you found this code or our paper beneficial to your research.
+```
+@article{Wallace2020Stealing,
+    Author = {Eric Wallace and Mitchell Stern and Dawn Song},    
+    journal={arXiv preprint arXiv:2004.15015},
+    Year = {2020},
+    Title = {Imitation Attacks and Defenses for Black-box Machine Translation Systems}
+}
+```
 
 ## Contributions and Contact
 
